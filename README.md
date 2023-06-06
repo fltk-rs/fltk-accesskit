@@ -4,6 +4,7 @@ fltk-accesskit is an fltk accesskit adapter made to work with the fltk gui crate
 
 Example code:
 ```rust
+#![windows_subsystem = "windows"]
 use fltk::{prelude::*, *};
 use fltk_accesskit::{AccessibilityContext, AccessibleApp};
 

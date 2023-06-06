@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use fltk_accesskit::{AccessibilityContext, Accessible, AccessibleApp};
 use accesskit::{Action, DefaultActionVerb, Node, NodeBuilder, NodeClassSet, NodeId, Rect, Role};
 use fltk::{enums::*, prelude::*, *};

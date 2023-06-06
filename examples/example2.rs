@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use fltk_accesskit::{AccessibilityContext, AccessibleApp};
 use fltk::{prelude::*, *};
 
