@@ -54,3 +54,5 @@ fltk-accesskit = "0.1.0"
 ```
 
 ![image](https://github.com/cross-rs/cross/assets/37966791/c9f16b3b-9ec4-4b23-83ae-fc8759353aa9)
+
+[Video demo](https://www.youtube.com/watch?v=x53Rxjg8IF8)
