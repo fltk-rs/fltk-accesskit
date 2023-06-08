@@ -29,9 +29,9 @@ impl Adapter {
     ) -> Rc<Self> {
         #[cfg(not(any(target_os = "windows", target_os = "macos")))]
         let adapter = UnixAdapter::new(
-            String::new(),
-            String::new(),
-            String::new(),
+            win.xclass().unwrap_or(String::new()),
+            "FLTK".to_string(),
+            "1.4".to_string(),
             source,
             action_handler,
         );
