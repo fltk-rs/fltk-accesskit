@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use accesskit::{NodeClassSet, NodeId, Tree, TreeUpdate};
 use fltk::{enums::*, prelude::*, *};
 use std::num::NonZeroU128;
