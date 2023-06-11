@@ -148,6 +148,7 @@ impl Accessible for input::MultilineInput {
         let mut builder = NodeBuilder::new(Role::TextField);
         builder.set_value(&*self.value());
         builder.set_default_action_verb(DefaultActionVerb::Focus);
+        builder.set_multiline();
         let id = node_common(&mut builder, self, children);
         (id, builder.build(nc))
     }
@@ -157,6 +158,7 @@ impl Accessible for output::MultilineOutput {
     fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
         let mut builder = NodeBuilder::new(Role::StaticText);
         builder.set_value(&*self.value());
+        builder.set_multiline();
         let id = node_common(&mut builder, self, children);
         (id, builder.build(nc))
     }
@@ -189,6 +191,192 @@ impl Accessible for valuator::Slider {
     fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
         let mut builder = NodeBuilder::new(Role::Slider);
         builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::NiceSlider {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::ValueSlider {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::FillSlider {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::HorSlider {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::HorFillSlider {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::HorNiceSlider {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::HorValueSlider {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::Dial {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::FillDial {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::LineDial {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::Counter {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::Roller {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::ValueInput {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
+        let id = node_common(&mut builder, self, children);
+        (id, builder.build(nc))
+    }
+}
+
+impl Accessible for valuator::ValueOutput {
+    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = NodeBuilder::new(Role::Slider);
+        builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
+        builder.add_action(Action::SetValue);
         let id = node_common(&mut builder, self, children);
         (id, builder.build(nc))
     }
@@ -198,6 +386,9 @@ impl Accessible for valuator::Scrollbar {
     fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
         let mut builder = NodeBuilder::new(Role::ScrollBar);
         builder.set_numeric_value(self.value());
+        builder.set_min_numeric_value(self.minimum());
+        builder.set_max_numeric_value(self.maximum());
+        builder.set_numeric_value_step(self.step());
         let id = node_common(&mut builder, self, children);
         (id, builder.build(nc))
     }
