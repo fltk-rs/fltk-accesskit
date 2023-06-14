@@ -20,7 +20,7 @@ impl ActionHandler for FltkActionHandler {
     fn do_action(&self, request: ActionRequest) {
         unsafe {
             app::handle_raw(
-                std::mem::transmute(request.action as i32),
+                std::mem::transmute(request.action as i32 + 100),
                 self.window_id.as_widget_ptr() as _,
             );
         }
