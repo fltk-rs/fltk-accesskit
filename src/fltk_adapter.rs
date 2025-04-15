@@ -1,5 +1,6 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
+#![allow(clippy::missing_transmute_annotations)]
 use accesskit::{ActionHandler, Node, ActivationHandler, DeactivationHandler, ActionRequest, Point, Rect, Size, TreeUpdate, NodeId, Tree};
 use fltk::{enums::*, prelude::*, *};
 use std::rc::Rc;

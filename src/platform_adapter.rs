@@ -19,7 +19,7 @@ pub struct Adapter {
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     adapter: Option<UnixAdapter>,
     #[cfg(any(target_os = "windows", target_os = "macos"))]
-    adapter: SubclassingAdapter,
+    adapter: Option<SubclassingAdapter>,
 }
 
 impl Adapter {
@@ -90,8 +90,10 @@ impl Adapter {
         }
         #[cfg(any(target_os = "macos", target_os = "windows"))]
         {
-            if let Some(events) = self.adapter.update_if_active(updater) {
-                events.raise();
+            if let Some(adapter) = &mut self.adapter {
+                if let Some(events) = adapter.update_if_active(updater) {
+                    events.raise();
+                }
             }
         }
     }
