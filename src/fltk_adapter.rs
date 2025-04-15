@@ -1,8 +1,9 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
-use accesskit::{ActionHandler, ActionRequest, Point, Rect, Size, TreeUpdate};
+use accesskit::{ActionHandler, Node, ActivationHandler, DeactivationHandler, ActionRequest, Point, Rect, Size, TreeUpdate, NodeId, Tree};
 use fltk::{enums::*, prelude::*, *};
 use std::rc::Rc;
+use std::cell::RefCell;
 
 use crate::platform_adapter;
 
@@ -12,12 +13,32 @@ pub struct ActionRequestEvent {
     pub request: ActionRequest,
 }
 
-struct FltkActionHandler {
+pub(crate) struct FltkActivationHandler {
+    pub wids: Vec<(NodeId, Node)>,
+    pub win_id: NodeId,
+}
+
+impl ActivationHandler for FltkActivationHandler {
+    fn request_initial_tree(&mut self) -> Option<TreeUpdate> {
+        Some(TreeUpdate {
+            nodes: self.wids.clone(),
+            tree: Some(Tree::new(self.win_id)),
+            focus: if let Some(focused) = app::focus() {
+                let focused = focused.as_widget_ptr() as usize as u64;
+                NodeId(focused)
+            } else {
+                self.win_id
+            }
+        })
+    }
+}
+
+pub(crate) struct FltkActionHandler {
     window_id: window::Window,
 }
 
 impl ActionHandler for FltkActionHandler {
-    fn do_action(&self, request: ActionRequest) {
+    fn do_action(&mut self, request: ActionRequest) {
         unsafe {
             app::handle_raw(
                 std::mem::transmute(request.action as i32 + 100),
@@ -27,33 +48,40 @@ impl ActionHandler for FltkActionHandler {
     }
 }
 
+pub(crate) struct FltkDeactivationHandler {}
+
+impl DeactivationHandler for FltkDeactivationHandler {
+    fn deactivate_accessibility(&mut self) {}
+}
+
 #[derive(Clone)]
 pub struct Adapter {
-    adapter: Rc<platform_adapter::Adapter>,
+    adapter: Rc<RefCell<platform_adapter::Adapter>>,
 }
 
 impl Adapter {
     pub fn new(
         window: &window::Window,
-        source: impl 'static + FnOnce() -> TreeUpdate + Send,
+        source: impl 'static + ActivationHandler + Send,
     ) -> Self {
         let action_handler = FltkActionHandler {
             window_id: window.clone(),
         };
-        Self::with_action_handler(window, source, Box::new(action_handler))
+        Self::with_action_handler(window, source, action_handler)
     }
 
     pub fn with_action_handler(
         window: &window::Window,
-        source: impl 'static + FnOnce() -> TreeUpdate + Send,
-        action_handler: Box<dyn ActionHandler + Send + Sync + 'static>,
+        source: impl 'static + ActivationHandler + Send,
+        action_handler: impl 'static + ActionHandler + Send,
     ) -> Self {
-        let adapter = platform_adapter::Adapter::new(window, source, action_handler);
+        let deactivation_handler = FltkDeactivationHandler{};
+        let adapter = platform_adapter::Adapter::new(window, source, action_handler, deactivation_handler);
         window.clone().resize_callback({
             let adapter = adapter.clone();
             move |_, x, y, w, h| {
                 #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-                adapter.set_root_window_bounds(
+                adapter.borrow_mut().set_root_window_bounds(
                     Rect::from_origin_size(
                         Point {
                             x: x as _,
@@ -103,11 +131,11 @@ impl Adapter {
         unsafe { app::handle_raw(*event, window.as_widget_ptr() as _) }
     }
 
-    pub fn update(&self, update: TreeUpdate) {
-        self.adapter.update(update)
-    }
+    // pub fn update_window_focus_state(&mut self, is_focused: bool) {
+    //     self.adapter.borrow_mut().update_window_focus_state(is_focused)
+    // }
 
-    pub fn update_if_active(&self, updater: impl FnOnce() -> TreeUpdate) {
-        self.adapter.update_if_active(updater)
+    pub fn update_if_active(&mut self, updater: impl FnOnce() -> TreeUpdate) {
+        self.adapter.borrow_mut().update_if_active(updater)
     }
 }

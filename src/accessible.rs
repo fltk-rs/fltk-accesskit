@@ -1,17 +1,16 @@
 use accesskit::{
-    Action, Affine, CheckedState, DefaultActionVerb, Node, NodeBuilder, NodeClassSet, NodeId, Rect,
+    Action, Affine, Toggled, Node, NodeId, Rect,
     Role, TextPosition, TextSelection,
 };
 use fltk::{enums::*, prelude::*, *};
-use std::num::NonZeroU128;
 
 pub trait Accessible {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node);
 }
 
-fn node_widget_common(builder: &mut NodeBuilder, wid: &impl WidgetExt, children: &[NodeId]) -> NodeId {
+fn node_widget_common(builder: &mut Node, wid: &impl WidgetExt, children: &[NodeId]) -> NodeId {
     let node_id =
-        NodeId(unsafe { NonZeroU128::new_unchecked(wid.as_widget_ptr() as usize as u128) });
+        NodeId(wid.as_widget_ptr() as usize as u64);
     if wid.parent().is_some() && wid.as_window().is_none() {
         builder.set_bounds(Rect {
             x0: wid.x() as f64,
@@ -27,9 +26,9 @@ fn node_widget_common(builder: &mut NodeBuilder, wid: &impl WidgetExt, children:
             y1: wid.h() as f64,
         });
     }
-    builder.set_name(&*wid.label());
+    builder.set_label(&*wid.label());
     if wid.trigger().contains(CallbackTrigger::Release) {
-        builder.set_default_action_verb(DefaultActionVerb::Click);
+        builder.add_action(Action::Click);
     }
     if wid.takes_events() && wid.has_visible_focus() {
         builder.add_action(Action::Focus);
@@ -41,150 +40,148 @@ fn node_widget_common(builder: &mut NodeBuilder, wid: &impl WidgetExt, children:
 }
 
 impl Accessible for button::Button {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Button);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Button);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for button::RadioButton {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::RadioButton);
-        builder.set_checked_state(if self.value() {
-            CheckedState::True
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::RadioButton);
+        builder.set_toggled(if self.value() {
+            Toggled::True
         } else {
-            CheckedState::False
+            Toggled::False
         });
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for button::RadioRoundButton {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::RadioButton);
-        builder.set_checked_state(if self.value() {
-            CheckedState::True
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::RadioButton);
+        builder.set_toggled(if self.value() {
+            Toggled::True
         } else {
-            CheckedState::False
+            Toggled::False
         });
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for button::CheckButton {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::CheckBox);
-        builder.set_checked_state(if self.value() {
-            CheckedState::True
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::CheckBox);
+        builder.set_toggled(if self.value() {
+            Toggled::True
         } else {
-            CheckedState::False
+            Toggled::False
         });
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for button::ToggleButton {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::ToggleButton);
-        builder.set_checked_state(if self.value() {
-            CheckedState::True
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::RadioButton);
+        builder.set_toggled(if self.value() {
+            Toggled::True
         } else {
-            CheckedState::False
+            Toggled::False
         });
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for window::Window {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Window);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Window);
         builder.set_transform(Affine::scale(app::screen_scale(0) as f64));
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for frame::Frame {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::default();
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::default();
         let id = node_widget_common(&mut builder, self, children);
         if self.image().is_some() {
             builder.set_role(Role::Image);
         } else {
-            builder.set_role(Role::StaticText);
+            builder.set_role(Role::Label);
         }
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for output::Output {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::StaticText);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Label);
         builder.set_value(&*self.value());
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for input::Input {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::TextField);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::TextInput);
         builder.set_value(&*self.value());
-        builder.set_default_action_verb(DefaultActionVerb::Focus);
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for input::IntInput {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::TextField);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::TextInput);
         builder.set_value(&*self.value());
-        builder.set_default_action_verb(DefaultActionVerb::Focus);
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for input::FloatInput {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::TextField);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::TextInput);
         builder.set_value(&*self.value());
-        builder.set_default_action_verb(DefaultActionVerb::Focus);
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for input::MultilineInput {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::TextField);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::MultilineTextInput);
         builder.set_value(&*self.value());
-        builder.set_default_action_verb(DefaultActionVerb::Focus);
-        builder.set_multiline();
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for output::MultilineOutput {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::StaticText);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Paragraph);
         builder.set_value(&*self.value());
-        builder.set_multiline();
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for text::TextDisplay {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::StaticText);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Paragraph);
         let id = node_widget_common(&mut builder, self, children);
         if let Some(buf) = self.buffer() {
             builder.set_value(&*buf.text());
@@ -201,14 +198,14 @@ impl Accessible for text::TextDisplay {
                 });
             }
         }
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for text::TextEditor {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::TextField);
-        builder.set_default_action_verb(DefaultActionVerb::Focus);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::TextInput);
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
         if let Some(buf) = self.buffer() {
             builder.set_value(&*buf.text());
@@ -225,14 +222,15 @@ impl Accessible for text::TextEditor {
                 });
             }
         }
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
+#[allow(deprecated)]
 impl Accessible for text::SimpleTerminal {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Term);
-        builder.set_default_action_verb(DefaultActionVerb::Focus);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Terminal);
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
         if let Some(buf) = self.buffer() {
             builder.set_value(&*buf.text());
@@ -249,282 +247,282 @@ impl Accessible for text::SimpleTerminal {
                 });
             }
         }
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::Slider {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::NiceSlider {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::ValueSlider {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::FillSlider {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::HorSlider {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::HorFillSlider {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::HorNiceSlider {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::HorValueSlider {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::Dial {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::FillDial {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::LineDial {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::Counter {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::Roller {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::ValueInput {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::ValueOutput {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Slider);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Slider);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for valuator::Scrollbar {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::ScrollBar);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::ScrollBar);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         builder.set_numeric_value_step(self.step());
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for menu::MenuBar {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::MenuBar);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::MenuBar);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for menu::Choice {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::PopupButton);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::MenuListPopup);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for table::Table {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Table);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Table);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for tree::Tree {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Tree);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Tree);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for group::Scroll {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::ScrollView);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::ScrollView);
         builder.add_action(Action::ScrollDown);
         builder.add_action(Action::ScrollUp);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for group::Flex {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Group);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Group);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for group::Group {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::Group);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::Group);
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
 
 impl Accessible for misc::Progress {
-    fn make_node(&self, nc: &mut NodeClassSet, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = NodeBuilder::new(Role::ProgressIndicator);
+    fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
+        let mut builder = Node::new(Role::ProgressIndicator);
         builder.set_numeric_value(self.value());
         builder.set_min_numeric_value(self.minimum());
         builder.set_max_numeric_value(self.maximum());
         let id = node_widget_common(&mut builder, self, children);
-        (id, builder.build(nc))
+        (id, builder)
     }
 }
