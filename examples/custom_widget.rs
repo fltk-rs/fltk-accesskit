@@ -1,9 +1,8 @@
 #![windows_subsystem = "windows"]
 
 use fltk_accesskit::{AccessibilityContext, Accessible, AccessibleApp};
-use accesskit::{Action, DefaultActionVerb, Node, NodeBuilder, NodeClassSet, NodeId, Rect, Role};
+use accesskit::{Action, Node, NodeId, Rect, Role};
 use fltk::{enums::*, prelude::*, *};
-use std::num::NonZeroU128;
 
 #[derive(Clone)]
 struct MyButton {
@@ -19,21 +18,21 @@ impl MyButton {
 }
 
 impl Accessible for MyButton {
-    fn make_node(&self, nc: &mut NodeClassSet, _children: &[NodeId]) -> (NodeId, Node) {
+    fn make_node(&self, _children: &[NodeId]) -> (NodeId, Node) {
         let node_id =
-            NodeId(unsafe { NonZeroU128::new_unchecked(self.as_widget_ptr() as usize as u128) });
+            NodeId(self.as_widget_ptr() as usize as u64);
         let node = {
-            let mut builder = NodeBuilder::new(Role::Button);
+            let mut builder = Node::new(Role::Button);
             builder.set_bounds(Rect {
                 x0: self.x() as f64,
                 y0: self.y() as f64,
                 x1: (self.w() + self.x()) as f64,
                 y1: (self.h() + self.y()) as f64,
             });
-            builder.set_name(&*self.label());
+            builder.set_label(&*self.label());
             builder.add_action(Action::Focus);
-            builder.set_default_action_verb(DefaultActionVerb::Click);
-            builder.build(nc)
+            builder.add_action(Action::Click);
+            builder
         };
         (node_id, node)
     }
