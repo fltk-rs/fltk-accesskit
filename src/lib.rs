@@ -17,7 +17,7 @@ pub struct AccessibilityContext {
 }
 
 impl AccessibilityContext {
-    pub fn new(root: window::Window, mut widgets: Vec<Box<dyn Accessible>>) -> Self {
+    pub fn new(root: window::Window, widgets: Vec<Box<dyn Accessible>>) -> Self {
         let mut wids = vec![];
         for w in &widgets {
             let n = w.make_node(&[]);
@@ -27,7 +27,6 @@ impl AccessibilityContext {
         wids.push((win_id, win_node));
         let activation_handler = crate::fltk_adapter::FltkActivationHandler { wids, win_id };
         let adapter = { Adapter::new(&root, activation_handler) };
-        widgets.push(Box::new(root.clone()));
         Self {
             adapter,
             root,
@@ -43,30 +42,28 @@ pub trait AccessibleApp {
 impl AccessibleApp for app::App {
     fn run_with_accessibility(&self, mut ac: AccessibilityContext) -> Result<(), FltkError> {
         ac.root.handle({
-            let adapter = ac.adapter.clone();
-            move |w, ev| {
-                let mut adapter = adapter.clone();
+            let mut adapter = ac.adapter.clone();
+            move |root_window, ev| {
                 match ev {
                     Event::KeyUp => {
-                        // if app::event_key() == Key::Tab {
                         let mut wids = vec![];
                         for w in &ac.widgets {
                             let n = w.make_node(&[]);
                             wids.push(n);
                         }
+        
                         let (win_id, win_node) =
-                            w.make_node(&wids.iter().map(|x| x.0).collect::<Vec<_>>());
+                            root_window.make_node(&wids.iter().map(|x| x.0).collect::<Vec<_>>());
                         wids.push((win_id, win_node));
-                        if let Some(focused) = app::focus() {
-                            let focused = focused.as_widget_ptr() as usize as u64;
-                            let node_id = NodeId(focused);
+        
+                        if let Some(focused) = fltk::app::focus() {
+                            let node_id = NodeId(focused.as_widget_ptr() as _);
                             adapter.update_if_active(|| TreeUpdate {
                                 nodes: wids,
                                 tree: None,
                                 focus: node_id,
                             });
                         }
-                        // }
                         false
                     }
                     _ => false,
