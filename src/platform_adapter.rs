@@ -37,7 +37,7 @@ impl Adapter {
         );
         #[cfg(target_os = "windows")]
         let adapter =
-            SubclassingAdapter::new(HWND(_win.raw_handle() as isize), activation_handler, action_handler);
+            SubclassingAdapter::new(HWND(_win.raw_handle()), activation_handler, action_handler);
         #[cfg(target_os = "macos")]
         let adapter = {
             use std::os::raw;
