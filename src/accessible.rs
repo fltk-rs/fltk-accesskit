@@ -1,7 +1,4 @@
-use accesskit::{
-    Action, Affine, Toggled, Node, NodeId, Rect,
-    Role, TextPosition, TextSelection,
-};
+use accesskit::{Action, Affine, Node, NodeId, Rect, Role, TextPosition, TextSelection, Toggled};
 use fltk::{enums::*, prelude::*, *};
 
 pub trait Accessible {
@@ -9,8 +6,7 @@ pub trait Accessible {
 }
 
 fn node_widget_common(builder: &mut Node, wid: &impl WidgetExt, children: &[NodeId]) -> NodeId {
-    let node_id =
-        NodeId(wid.as_widget_ptr() as usize as u64);
+    let node_id = NodeId(wid.as_widget_ptr() as usize as u64);
     if wid.parent().is_some() && wid.as_window().is_none() {
         builder.set_bounds(Rect {
             x0: wid.x() as f64,

@@ -1,10 +1,13 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 #![allow(clippy::missing_transmute_annotations)]
-use accesskit::{ActionHandler, Node, ActivationHandler, DeactivationHandler, ActionRequest, Point, Rect, Size, TreeUpdate, NodeId, Tree};
+use accesskit::{
+    ActionHandler, ActionRequest, ActivationHandler, DeactivationHandler, Node, NodeId, Point,
+    Rect, Size, Tree, TreeUpdate,
+};
 use fltk::{enums::*, prelude::*, *};
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use crate::platform_adapter;
 
@@ -29,7 +32,7 @@ impl ActivationHandler for FltkActivationHandler {
                 NodeId(focused)
             } else {
                 self.win_id
-            }
+            },
         })
     }
 }
@@ -61,10 +64,7 @@ pub struct Adapter {
 }
 
 impl Adapter {
-    pub fn new(
-        window: &window::Window,
-        source: impl 'static + ActivationHandler + Send,
-    ) -> Self {
+    pub fn new(window: &window::Window, source: impl 'static + ActivationHandler + Send) -> Self {
         let action_handler = FltkActionHandler {
             window_id: window.clone(),
         };
@@ -76,8 +76,9 @@ impl Adapter {
         source: impl 'static + ActivationHandler + Send,
         action_handler: impl 'static + ActionHandler + Send,
     ) -> Self {
-        let deactivation_handler = FltkDeactivationHandler{};
-        let adapter = platform_adapter::Adapter::new(window, source, action_handler, deactivation_handler);
+        let deactivation_handler = FltkDeactivationHandler {};
+        let adapter =
+            platform_adapter::Adapter::new(window, source, action_handler, deactivation_handler);
         window.clone().resize_callback({
             let adapter = adapter.clone();
             move |_, x, y, w, h| {

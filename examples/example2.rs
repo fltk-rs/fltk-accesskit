@@ -1,7 +1,7 @@
 #![windows_subsystem = "windows"]
 
-use fltk_accesskit::{AccessibilityContext, AccessibleApp};
 use fltk::{prelude::*, *};
+use fltk_accesskit::{AccessibilityContext, AccessibleApp};
 
 fn main() {
     let a = app::App::default();

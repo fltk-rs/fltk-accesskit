@@ -23,15 +23,10 @@ impl AccessibilityContext {
             let n = w.make_node(&[]);
             wids.push(n);
         }
-        let (win_id, win_node) =
-            root.make_node(&wids.iter().map(|x| x.0).collect::<Vec<_>>());
+        let (win_id, win_node) = root.make_node(&wids.iter().map(|x| x.0).collect::<Vec<_>>());
         wids.push((win_id, win_node));
-        let activation_handler = crate::fltk_adapter::FltkActivationHandler {
-            wids, win_id
-        };
-        let adapter = {
-            Adapter::new(&root, activation_handler)
-        };
+        let activation_handler = crate::fltk_adapter::FltkActivationHandler { wids, win_id };
+        let adapter = { Adapter::new(&root, activation_handler) };
         widgets.push(Box::new(root.clone()));
         Self {
             adapter,

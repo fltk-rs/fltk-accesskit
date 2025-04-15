@@ -1,8 +1,8 @@
 #![windows_subsystem = "windows"]
 
-use fltk_accesskit::{AccessibilityContext, Accessible, AccessibleApp};
 use accesskit::{Action, Node, NodeId, Rect, Role};
 use fltk::{enums::*, prelude::*, *};
+use fltk_accesskit::{AccessibilityContext, Accessible, AccessibleApp};
 
 #[derive(Clone)]
 struct MyButton {
@@ -19,8 +19,7 @@ impl MyButton {
 
 impl Accessible for MyButton {
     fn make_node(&self, _children: &[NodeId]) -> (NodeId, Node) {
-        let node_id =
-            NodeId(self.as_widget_ptr() as usize as u64);
+        let node_id = NodeId(self.as_widget_ptr() as usize as u64);
         let node = {
             let mut builder = Node::new(Role::Button);
             builder.set_bounds(Rect {
