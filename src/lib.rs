@@ -8,7 +8,7 @@ mod fltk_adapter;
 mod platform_adapter;
 
 pub use accessible::Accessible;
-pub use fltk_adapter::{ActionRequestEvent, Adapter};
+pub use fltk_adapter::Adapter;
 
 pub struct AccessibilityContext {
     adapter: Adapter,
