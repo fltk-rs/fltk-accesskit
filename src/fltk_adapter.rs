@@ -178,10 +178,30 @@ impl Adapter {
                                     }
                                 }
                             }
+                            Action::Expand => {
+                                // Expand menu-like controls
+                                if utils::is_ptr_of::<menu::MenuButton>(w.as_widget_ptr()) {
+                                    let mb = menu::MenuButton::from_widget_ptr(w.as_widget_ptr() as _);
+                                    // Show popup; user may select an item, which will close automatically
+                                    let _ = mb.popup();
+                                }
+                                // Choice and others: no standard programmatic popup; noop.
+                            }
+                            Action::Collapse => {
+                                // No-op: popups close automatically after selection
+                            }
                             Action::SetValue => {
                                 if let Some(data) = req.data {
                                     match data {
                                         ActionData::Value(s) => {
+                                            // Choice (by label)
+                                            if utils::is_ptr_of::<menu::Choice>(w.as_widget_ptr()) {
+                                                let mut c = menu::Choice::from_widget_ptr(w.as_widget_ptr() as _);
+                                                let idx = c.find_index(&s);
+                                                if idx >= 0 {
+                                                    c.set_value(idx);
+                                                }
+                                            }
                                             // Text-capable inputs
                                             if utils::is_ptr_of::<input::IntInput>(w.as_widget_ptr()) {
                                                 let mut i = input::IntInput::from_widget_ptr(w.as_widget_ptr() as _);
@@ -258,6 +278,17 @@ impl Adapter {
                                             }
                                         }
                                         ActionData::NumericValue(n) => {
+                                            // Choice (by index)
+                                            if utils::is_ptr_of::<menu::Choice>(w.as_widget_ptr()) {
+                                                let mut c = menu::Choice::from_widget_ptr(w.as_widget_ptr() as _);
+                                                let total = c.size();
+                                                let mut idx = n.round() as i32;
+                                                if idx < 0 { idx = 0; }
+                                                if idx >= total { idx = total - 1; }
+                                                if total > 0 {
+                                                    c.set_value(idx);
+                                                }
+                                            }
                                             // Inputs (apply rounding for IntInput)
                                             if utils::is_ptr_of::<input::IntInput>(w.as_widget_ptr()) {
                                                 let mut i = input::IntInput::from_widget_ptr(w.as_widget_ptr() as _);

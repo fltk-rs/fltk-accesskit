@@ -163,10 +163,9 @@ fn walk_group(grp: &group::Group, excludes: &Excludes, out: &mut Vec<(NodeId, ac
                 // For groups this prevents iterating children.
                 continue;
             }
-            // Add node if supported
-            if let Some(n) = crate::accessible::node_for_widget(&child, &[]) {
-                out.push(n);
-            }
+            // Add node(s) if supported (some widgets expand to multiple nodes)
+            let nodes = crate::accessible::nodes_for_widget(&child);
+            out.extend(nodes);
             // Recurse into groups that weren't excluded
             if let Some(subgrp) = subgrp {
                 walk_group(&subgrp, excludes, out);

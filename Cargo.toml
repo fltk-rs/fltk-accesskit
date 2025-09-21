@@ -1,6 +1,6 @@
 [package]
 name = "fltk-accesskit"
-version = "0.1.4"
+version = "0.2.0"
 edition = "2021"
 authors = ["MoAlyousef <mohammed.alyousef@neurosrg.com>"]
 description = "fltk accesskit adapter made to work with the fltk gui crate"
@@ -13,7 +13,7 @@ license = "MIT"
 
 [dependencies]
 accesskit = { version = "0.21"}
-fltk = "1.4"
+fltk = "1.5.14"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 accesskit_windows = { version = "0.29" }

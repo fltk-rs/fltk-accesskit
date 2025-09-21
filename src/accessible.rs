@@ -1,6 +1,6 @@
 use accesskit::{Action, Affine, Node, NodeId, Rect, Role, TextPosition, TextSelection, Toggled};
 use fltk::{
-    button, enums::*, frame, input, output, prelude::*, text, utils, widget, window, *,
+    button, enums::*, frame, input, menu, output, prelude::*, text, utils, widget, window, *,
 };
 
 pub trait Accessible {
@@ -72,6 +72,211 @@ pub fn node_for_widget(w: &widget::Widget, children: &[NodeId]) -> Option<(NodeI
     try_type!(window::Window);
 
     None
+}
+
+/// Build one or more nodes for a widget. Some complex widgets (menus, choices)
+/// expand to multiple nodes to expose their items.
+pub fn nodes_for_widget(w: &widget::Widget) -> Vec<(NodeId, Node)> {
+    let mut out = Vec::new();
+    let ptr = w.as_widget_ptr();
+
+    // Choice -> ComboBox with options
+    if utils::is_ptr_of::<menu::Choice>(ptr) {
+        let choice = unsafe { menu::Choice::from_widget_ptr(ptr as _) };
+        let mut parent = Node::new(Role::ComboBox);
+        if let Some(val) = choice.choice() {
+            parent.set_value(&*val);
+        }
+        parent.add_action(Action::Focus);
+        parent.add_action(Action::SetValue);
+        parent.set_has_popup(accesskit::HasPopup::Menu);
+        let parent_id = node_widget_common(&mut parent, &choice, &[]);
+
+        let total = choice.size();
+        for i in 0..choice.size() {
+            if let Some(item) = choice.at(i) {
+                let mut node = Node::new(Role::ListBoxOption);
+                if let Some(lbl) = item.label() {
+                    node.set_label(&*lbl);
+                }
+                if i == choice.value() {
+                    node.set_selected(true);
+                }
+                node.set_position_in_set((i + 1) as usize);
+                node.set_size_of_set(total as usize);
+                let item_id = NodeId(unsafe { item.as_ptr() } as usize as u64);
+                parent.push_child(item_id);
+                out.push((item_id, node));
+            }
+        }
+
+        parent.set_size_of_set(total as usize);
+        out.push((parent_id, parent));
+        return out;
+    }
+
+    // MenuBar -> MenuBar with menu/menuitems
+    if utils::is_ptr_of::<menu::MenuBar>(ptr) {
+        let bar = unsafe { menu::MenuBar::from_widget_ptr(ptr as _) };
+        let mut bar_node = Node::new(Role::MenuBar);
+        bar_node.add_action(Action::Focus);
+        let bar_id = node_widget_common(&mut bar_node, &bar, &[]);
+
+        for i in 0..bar.size() {
+            if let Some(item) = bar.at(i) {
+                if item.is_submenu() {
+                    // Submenu as Role::Menu
+                    let mut menu_node = Node::new(Role::Menu);
+                    if let Some(lbl) = item.label() {
+                        menu_node.set_label(&*lbl);
+                    }
+                    let menu_id = NodeId(unsafe { item.as_ptr() } as usize as u64);
+                    bar_node.push_child(menu_id);
+
+                    // Add submenu items
+                    let count = item.size();
+                    for j in 0..count {
+                        if let Some(sub) = item.at(j) {
+                            let mut sub_node = Node::new(Role::MenuItem);
+                            if let Some(lbl) = sub.label() {
+                                sub_node.set_label(&*lbl);
+                            }
+                            if (sub.is_radio() || sub.is_checkbox()) && sub.value() {
+                                sub_node.set_selected(true);
+                            }
+                            let sub_id = NodeId(unsafe { sub.as_ptr() } as usize as u64);
+                            menu_node.push_child(sub_id);
+                            out.push((sub_id, sub_node));
+                        }
+                    }
+                    out.push((menu_id, menu_node));
+                } else {
+                    // Top-level item
+                    let mut node = Node::new(Role::MenuItem);
+                    if let Some(lbl) = item.label() {
+                        node.set_label(&*lbl);
+                    }
+                    if (item.is_radio() || item.is_checkbox()) && item.value() {
+                        node.set_selected(true);
+                    }
+                    let item_id = NodeId(unsafe { item.as_ptr() } as usize as u64);
+                    bar_node.push_child(item_id);
+                    out.push((item_id, node));
+                }
+            }
+        }
+        out.push((bar_id, bar_node));
+        return out;
+    }
+
+    // SysMenuBar -> MenuBar representation
+    if utils::is_ptr_of::<menu::SysMenuBar>(ptr) {
+        let bar = unsafe { menu::SysMenuBar::from_widget_ptr(ptr as _) };
+        let mut bar_node = Node::new(Role::MenuBar);
+        bar_node.add_action(Action::Focus);
+        let bar_id = node_widget_common(&mut bar_node, &bar, &[]);
+
+        for i in 0..bar.size() {
+            if let Some(item) = bar.at(i) {
+                if item.is_submenu() {
+                    let mut menu_node = Node::new(Role::Menu);
+                    if let Some(lbl) = item.label() {
+                        menu_node.set_label(&*lbl);
+                    }
+                    let menu_id = NodeId(unsafe { item.as_ptr() } as usize as u64);
+                    bar_node.push_child(menu_id);
+                    let count = item.size();
+                    for j in 0..count {
+                        if let Some(sub) = item.at(j) {
+                            let mut sub_node = Node::new(Role::MenuItem);
+                            if let Some(lbl) = sub.label() {
+                                sub_node.set_label(&*lbl);
+                            }
+                            if (sub.is_radio() || sub.is_checkbox()) && sub.value() {
+                                sub_node.set_selected(true);
+                            }
+                            let sub_id = NodeId(unsafe { sub.as_ptr() } as usize as u64);
+                            menu_node.push_child(sub_id);
+                            out.push((sub_id, sub_node));
+                        }
+                    }
+                    out.push((menu_id, menu_node));
+                } else {
+                    let mut node = Node::new(Role::MenuItem);
+                    if let Some(lbl) = item.label() {
+                        node.set_label(&*lbl);
+                    }
+                    if (item.is_radio() || item.is_checkbox()) && item.value() {
+                        node.set_selected(true);
+                    }
+                    let item_id = NodeId(unsafe { item.as_ptr() } as usize as u64);
+                    bar_node.push_child(item_id);
+                    out.push((item_id, node));
+                }
+            }
+        }
+        out.push((bar_id, bar_node));
+        return out;
+    }
+
+    // MenuButton -> Button with popup menu items
+    if utils::is_ptr_of::<menu::MenuButton>(ptr) {
+        let btn = unsafe { menu::MenuButton::from_widget_ptr(ptr as _) };
+        let mut btn_node = Node::new(Role::Button);
+        btn_node.add_action(Action::Focus);
+        btn_node.add_action(Action::Click);
+        btn_node.set_has_popup(accesskit::HasPopup::Menu);
+        btn_node.set_label(&*btn.label());
+        let btn_id = node_widget_common(&mut btn_node, &btn, &[]);
+
+        // Expose menu items as children
+        for i in 0..btn.size() {
+            if let Some(item) = btn.at(i) {
+                if item.is_submenu() {
+                    let mut menu_node = Node::new(Role::Menu);
+                    if let Some(lbl) = item.label() {
+                        menu_node.set_label(&*lbl);
+                    }
+                    let menu_id = NodeId(unsafe { item.as_ptr() } as usize as u64);
+                    btn_node.push_child(menu_id);
+                    let count = item.size();
+                    for j in 0..count {
+                        if let Some(sub) = item.at(j) {
+                            let mut sub_node = Node::new(Role::MenuItem);
+                            if let Some(lbl) = sub.label() {
+                                sub_node.set_label(&*lbl);
+                            }
+                            if (sub.is_radio() || sub.is_checkbox()) && sub.value() {
+                                sub_node.set_selected(true);
+                            }
+                            let sub_id = NodeId(unsafe { sub.as_ptr() } as usize as u64);
+                            menu_node.push_child(sub_id);
+                            out.push((sub_id, sub_node));
+                        }
+                    }
+                    out.push((menu_id, menu_node));
+                } else {
+                    let mut node = Node::new(Role::MenuItem);
+                    if let Some(lbl) = item.label() {
+                        node.set_label(&*lbl);
+                    }
+                    if (item.is_radio() || item.is_checkbox()) && item.value() {
+                        node.set_selected(true);
+                    }
+                    let item_id = NodeId(unsafe { item.as_ptr() } as usize as u64);
+                    btn_node.push_child(item_id);
+                    out.push((item_id, node));
+                }
+            }
+        }
+        out.push((btn_id, btn_node));
+        return out;
+    }
+
+    if let Some(n) = node_for_widget(w, &[]) {
+        out.push(n);
+    }
+    out
 }
 
 impl Accessible for button::Button {
