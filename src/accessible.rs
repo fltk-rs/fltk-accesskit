@@ -26,9 +26,6 @@ fn node_widget_common(builder: &mut Node, wid: &impl WidgetExt, children: &[Node
     if wid.trigger().contains(CallbackTrigger::Release) {
         builder.add_action(Action::Click);
     }
-    if wid.takes_events() && wid.has_visible_focus() {
-        builder.add_action(Action::Focus);
-    }
     for c in children {
         builder.push_child(*c);
     }
@@ -38,6 +35,7 @@ fn node_widget_common(builder: &mut Node, wid: &impl WidgetExt, children: &[Node
 impl Accessible for button::Button {
     fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
         let mut builder = Node::new(Role::Button);
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
         (id, builder)
     }
@@ -51,6 +49,7 @@ impl Accessible for button::RadioButton {
         } else {
             Toggled::False
         });
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
         (id, builder)
     }
@@ -64,6 +63,7 @@ impl Accessible for button::RadioRoundButton {
         } else {
             Toggled::False
         });
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
         (id, builder)
     }
@@ -77,6 +77,7 @@ impl Accessible for button::CheckButton {
         } else {
             Toggled::False
         });
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
         (id, builder)
     }
@@ -84,12 +85,13 @@ impl Accessible for button::CheckButton {
 
 impl Accessible for button::ToggleButton {
     fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = Node::new(Role::RadioButton);
+        let mut builder = Node::new(Role::Button);
         builder.set_toggled(if self.value() {
             Toggled::True
         } else {
             Toggled::False
         });
+        builder.add_action(Action::Focus);
         let id = node_widget_common(&mut builder, self, children);
         (id, builder)
     }
@@ -98,7 +100,8 @@ impl Accessible for button::ToggleButton {
 impl Accessible for window::Window {
     fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
         let mut builder = Node::new(Role::Window);
-        builder.set_transform(Affine::scale(app::screen_scale(0) as f64));
+        let sn = app::screen_num(self.x(), self.y());
+        builder.set_transform(Affine::scale(app::screen_scale(sn) as f64));
         let id = node_widget_common(&mut builder, self, children);
         (id, builder)
     }
@@ -131,6 +134,7 @@ impl Accessible for input::Input {
         let mut builder = Node::new(Role::TextInput);
         builder.set_value(&*self.value());
         builder.add_action(Action::Focus);
+        builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
         (id, builder)
     }
@@ -141,6 +145,7 @@ impl Accessible for input::IntInput {
         let mut builder = Node::new(Role::TextInput);
         builder.set_value(&*self.value());
         builder.add_action(Action::Focus);
+        builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
         (id, builder)
     }
@@ -151,6 +156,7 @@ impl Accessible for input::FloatInput {
         let mut builder = Node::new(Role::TextInput);
         builder.set_value(&*self.value());
         builder.add_action(Action::Focus);
+        builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
         (id, builder)
     }
@@ -161,6 +167,7 @@ impl Accessible for input::MultilineInput {
         let mut builder = Node::new(Role::MultilineTextInput);
         builder.set_value(&*self.value());
         builder.add_action(Action::Focus);
+        builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
         (id, builder)
     }
