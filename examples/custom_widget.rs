@@ -2,7 +2,7 @@
 
 use accesskit::{Action, Node, NodeId, Rect, Role};
 use fltk::{enums::*, prelude::*, *};
-use fltk_accesskit::{AccessibilityContext, Accessible, AccessibleApp};
+use fltk_accesskit::{builder, Accessible, AccessibleApp};
 
 #[derive(Clone)]
 struct MyButton {
@@ -52,7 +52,7 @@ fn main() {
     w.end();
     w.show();
 
-    let ac = AccessibilityContext::new(w, vec![Box::new(b1.clone()), Box::new(b2)]);
+    let ac = builder(w).attach();
 
     b1.set_callback(|_| println!("clicked 1"));
 

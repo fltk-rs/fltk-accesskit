@@ -5,7 +5,7 @@ use accesskit::{
     Node, NodeId, Point, Rect, Size, Tree, TreeUpdate,
 };
 use fltk::{
-    button, enums::*, input, misc, prelude::*, utils, valuator, widget, *,
+    button, enums::*, input, misc, prelude::*, text, utils, valuator, widget, *,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -74,6 +74,110 @@ impl Adapter {
                             Action::Focus => {
                                 let _ = w.take_focus();
                             }
+                            Action::ReplaceSelectedText => {
+                                if let Some(ActionData::Value(s)) = req.data.clone() {
+                                    // TextEditor: operate on buffer
+                                    if utils::is_ptr_of::<text::TextEditor>(w.as_widget_ptr()) {
+                                        let mut e =
+                                            text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
+                                        if let Some(mut buf) = e.buffer() {
+                                            if let Some((start, end)) = buf.selection_position() {
+                                                if start != end {
+                                                    buf.replace(start, end, &s);
+                                                    e.set_insert_position(start + s.len() as i32);
+                                                } else {
+                                                    let pos = e.insert_position();
+                                                    buf.insert(pos, &s);
+                                                    e.set_insert_position(pos + s.len() as i32);
+                                                }
+                                            } else {
+                                                let pos = e.insert_position();
+                                                buf.insert(pos, &s);
+                                                e.set_insert_position(pos + s.len() as i32);
+                                            }
+                                        }
+                                    // Input family
+                                    } else if utils::is_ptr_of::<input::Input>(w.as_widget_ptr())
+                                        || utils::is_ptr_of::<input::IntInput>(w.as_widget_ptr())
+                                        || utils::is_ptr_of::<input::FloatInput>(w.as_widget_ptr())
+                                        || utils::is_ptr_of::<input::MultilineInput>(w.as_widget_ptr())
+                                    {
+                                        let mut i = input::Input::from_widget_ptr(w.as_widget_ptr() as _);
+                                        let start = i.position();
+                                        let end = i.mark();
+                                        if start != end {
+                                            let _ = i.replace(start, end, &s);
+                                            let _ = i.set_position(start + s.len() as i32);
+                                            let _ = i.set_mark(start + s.len() as i32);
+                                        } else {
+                                            let _ = i.insert(&s);
+                                            let new_pos = start + s.len() as i32;
+                                            let _ = i.set_position(new_pos);
+                                            let _ = i.set_mark(new_pos);
+                                        }
+                                    }
+                                }
+                            }
+                            Action::ScrollIntoView => {
+                                // Best effort: for TextEditor, ensure caret is visible
+                                if utils::is_ptr_of::<text::TextEditor>(w.as_widget_ptr()) {
+                                    let mut e = text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
+                                    e.show_insert_position();
+                                }
+                            }
+                            Action::ScrollToPoint => {
+                                // No robust XY->position mapping for editors; best effort noop.
+                                // Could be extended for specific widgets/containers.
+                            }
+                            Action::SetTextSelection => {
+                                if let Some(ActionData::SetTextSelection(sel)) = req.data.clone() {
+                                    // Only apply when selection nodes target this widget
+                                    if sel.anchor.node == req.target && sel.focus.node == req.target {
+                                        // TextEditor path
+                                        if utils::is_ptr_of::<text::TextEditor>(w.as_widget_ptr()) {
+                                            let mut e =
+                                                text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
+                                            let mut buf = if let Some(b) = e.buffer() {
+                                                b
+                                            } else {
+                                                let b = text::TextBuffer::default();
+                                                e.set_buffer(Some(b));
+                                                e.buffer().unwrap()
+                                            };
+                                            let len = buf.length();
+                                            let mut a = sel.anchor.character_index as i32;
+                                            let mut f = sel.focus.character_index as i32;
+                                            a = a.clamp(0, len);
+                                            f = f.clamp(0, len);
+                                            if a == f {
+                                                // Caret move
+                                                buf.unselect();
+                                                e.set_insert_position(a);
+                                            } else {
+                                                let (start, end) = if a <= f { (a, f) } else { (f, a) };
+                                                buf.select(start, end);
+                                                e.set_insert_position(end);
+                                            }
+                                        // Input family path
+                                        } else if utils::is_ptr_of::<input::Input>(w.as_widget_ptr())
+                                            || utils::is_ptr_of::<input::IntInput>(w.as_widget_ptr())
+                                            || utils::is_ptr_of::<input::FloatInput>(w.as_widget_ptr())
+                                            || utils::is_ptr_of::<input::MultilineInput>(w.as_widget_ptr())
+                                        {
+                                            let mut i = input::Input::from_widget_ptr(w.as_widget_ptr() as _);
+                                            let len = i.value().len() as i32;
+                                            let mut a = sel.anchor.character_index as i32;
+                                            let mut f = sel.focus.character_index as i32;
+                                            a = a.clamp(0, len);
+                                            f = f.clamp(0, len);
+                                            let (start, end) = if a <= f { (a, f) } else { (f, a) };
+                                            // Set selection; on collapse, mark==position
+                                            let _ = i.set_position(start);
+                                            let _ = i.set_mark(end);
+                                        }
+                                    }
+                                }
+                            }
                             Action::SetValue => {
                                 if let Some(data) = req.data {
                                     match data {
@@ -92,6 +196,15 @@ impl Adapter {
                                             } else if utils::is_ptr_of::<input::Input>(w.as_widget_ptr()) {
                                                 let mut i = input::Input::from_widget_ptr(w.as_widget_ptr() as _);
                                                 i.set_value(&s);
+                                            } else if utils::is_ptr_of::<text::TextEditor>(w.as_widget_ptr()) {
+                                                let mut e = text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
+                                                if let Some(mut buf) = e.buffer() {
+                                                    buf.set_text(&s);
+                                                } else {
+                                                    let mut buf = text::TextBuffer::default();
+                                                    buf.set_text(&s);
+                                                    e.set_buffer(Some(buf));
+                                                }
                                             // Toggle/Check buttons (boolean from string)
                                             } else if utils::is_ptr_of::<button::CheckButton>(w.as_widget_ptr()) {
                                                 let mut b = button::CheckButton::from_widget_ptr(
@@ -159,6 +272,16 @@ impl Adapter {
                                             } else if utils::is_ptr_of::<input::Input>(w.as_widget_ptr()) {
                                                 let mut i = input::Input::from_widget_ptr(w.as_widget_ptr() as _);
                                                 i.set_value(&format!("{}", n));
+                                            } else if utils::is_ptr_of::<text::TextEditor>(w.as_widget_ptr()) {
+                                                let mut e = text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
+                                                let s = format!("{}", n);
+                                                if let Some(mut buf) = e.buffer() {
+                                                    buf.set_text(&s);
+                                                } else {
+                                                    let mut buf = text::TextBuffer::default();
+                                                    buf.set_text(&s);
+                                                    e.set_buffer(Some(buf));
+                                                }
                                             // Toggle/Check buttons (numeric → bool)
                                             } else if utils::is_ptr_of::<button::CheckButton>(w.as_widget_ptr()) {
                                                 let mut b = button::CheckButton::from_widget_ptr(

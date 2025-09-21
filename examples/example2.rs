@@ -1,7 +1,7 @@
 #![windows_subsystem = "windows"]
 
 use fltk::{prelude::*, *};
-use fltk_accesskit::{AccessibilityContext, AccessibleApp};
+use fltk_accesskit::{builder, AccessibleApp};
 
 fn main() {
     let a = app::App::default();
@@ -9,15 +9,15 @@ fn main() {
         .with_size(400, 300)
         .with_label("Hello Window");
     let col = group::Flex::default_fill().column();
-    let b1 = button::Button::default().with_label("Increment");
-    let f = frame::Frame::default().with_label("0");
-    let b2 = button::Button::default().with_label("Decrement");
+    let _b1 = button::Button::default().with_label("Increment");
+    let _f = frame::Frame::default().with_label("0");
+    let _b2 = button::Button::default().with_label("Decrement");
     col.end();
     w.end();
     w.make_resizable(true);
     w.show();
 
-    let ac = AccessibilityContext::new(w, vec![Box::new(b1), Box::new(f), Box::new(b2)]);
+    let ac = builder(w).attach();
 
     a.run_with_accessibility(ac).unwrap();
 }

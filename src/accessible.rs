@@ -1,5 +1,7 @@
 use accesskit::{Action, Affine, Node, NodeId, Rect, Role, TextPosition, TextSelection, Toggled};
-use fltk::{enums::*, prelude::*, *};
+use fltk::{
+    button, enums::*, frame, input, output, prelude::*, text, utils, widget, window, *,
+};
 
 pub trait Accessible {
     fn make_node(&self, children: &[NodeId]) -> (NodeId, Node);
@@ -30,6 +32,46 @@ fn node_widget_common(builder: &mut Node, wid: &impl WidgetExt, children: &[Node
         builder.push_child(*c);
     }
     node_id
+}
+
+/// Try to build an accessibility node for a given widget pointer.
+/// Returns None for unsupported widget types. Window nodes are handled separately.
+pub fn node_for_widget(w: &widget::Widget, children: &[NodeId]) -> Option<(NodeId, Node)> {
+    let ptr = w.as_widget_ptr();
+    macro_rules! try_type {
+        ($t:ty) => {
+            if utils::is_ptr_of::<$t>(ptr) {
+                let typed = unsafe { <$t>::from_widget_ptr(ptr as _) };
+                let (id, node) = typed.make_node(children);
+                return Some((id, node));
+            }
+        };
+    }
+
+    // Buttons (more specific first)
+    try_type!(button::RadioButton);
+    try_type!(button::RadioRoundButton);
+    try_type!(button::CheckButton);
+    try_type!(button::ToggleButton);
+    try_type!(button::Button);
+
+    // Inputs/Outputs/Text
+    try_type!(input::IntInput);
+    try_type!(input::FloatInput);
+    try_type!(input::MultilineInput);
+    try_type!(input::Input);
+    try_type!(text::TextEditor);
+    try_type!(output::MultilineOutput);
+    try_type!(output::Output);
+    try_type!(text::TextDisplay);
+
+    // Frames (image/label)
+    try_type!(frame::Frame);
+
+    // Windows (non-root windows will be discovered)
+    try_type!(window::Window);
+
+    None
 }
 
 impl Accessible for button::Button {
@@ -207,8 +249,14 @@ impl Accessible for text::TextDisplay {
 
 impl Accessible for text::TextEditor {
     fn make_node(&self, children: &[NodeId]) -> (NodeId, Node) {
-        let mut builder = Node::new(Role::TextInput);
+        let mut builder = Node::new(Role::MultilineTextInput);
+
+        // Value and selection
+        if let Some(buf) = self.buffer() {
+            builder.set_value(&*buf.text());
+        }
         builder.add_action(Action::Focus);
+        builder.add_action(Action::SetValue);
         let id = node_widget_common(&mut builder, self, children);
         if let Some(buf) = self.buffer() {
             builder.set_value(&*buf.text());

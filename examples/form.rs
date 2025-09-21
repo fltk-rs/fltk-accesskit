@@ -1,7 +1,7 @@
 #![windows_subsystem = "windows"]
 
 use fltk::{prelude::*, *};
-use fltk_accesskit::{AccessibilityContext, AccessibleApp};
+use fltk_accesskit::{builder, AccessibleApp};
 
 fn main() {
     let a = app::App::default().with_scheme(app::Scheme::Oxy);
@@ -12,11 +12,11 @@ fn main() {
         .with_size(200, 100)
         .center_of_parent()
         .column();
-    let inp = input::Input::default()
+    let _inp = input::Input::default()
         .with_id("inp")
         .with_label("Enter name:");
     let mut btn = button::Button::default().with_label("Greet");
-    let out = output::Output::default().with_id("out");
+    let _out = output::Output::default().with_id("out");
     col.end();
     w.end();
     w.make_resizable(true);
@@ -24,7 +24,7 @@ fn main() {
 
     btn.set_callback(btn_callback);
 
-    let ac = AccessibilityContext::new(w, vec![Box::new(inp), Box::new(btn), Box::new(out)]);
+    let ac = builder(w).attach();
 
     a.run_with_accessibility(ac).unwrap();
 }
