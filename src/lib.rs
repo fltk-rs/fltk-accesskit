@@ -108,25 +108,29 @@ pub trait AccessibleApp {
     fn run_with_accessibility(&self, ac: AccessibilityContext) -> Result<(), FltkError>;
 }
 
+pub fn update_focused(ac: &AccessibilityContext) {
+    let mut adapter = ac.adapter.clone();
+    let wids = ac.collect();
+    if let Some(focused) = fltk::app::focus() {
+        let node_id = NodeId(focused.as_widget_ptr() as _);
+        adapter.update_if_active(|| TreeUpdate {
+            nodes: wids,
+            tree: None,
+            focus: node_id,
+        });
+    }
+}
+
 impl AccessibleApp for app::App {
     fn run_with_accessibility(&self, ac: AccessibilityContext) -> Result<(), FltkError> {
         // Move context into the handler, using a cloned root to register the closure.
         let ctx = ac;
         let mut root = ctx.root.clone();
-        let mut adapter = ctx.adapter.clone();
         root.handle({
             move |_, ev| {
                 match ev {
                     Event::KeyUp => {
-                        let wids = ctx.collect();
-                        if let Some(focused) = fltk::app::focus() {
-                            let node_id = NodeId(focused.as_widget_ptr() as _);
-                            adapter.update_if_active(|| TreeUpdate {
-                                nodes: wids,
-                                tree: None,
-                                focus: node_id,
-                            });
-                        }
+                        update_focused(&ctx);
                         false
                     }
                     _ => false,
