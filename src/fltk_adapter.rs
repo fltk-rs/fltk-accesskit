@@ -1,12 +1,10 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 use accesskit::{
-    Action, ActionData, ActionHandler, ActionRequest, ActivationHandler, DeactivationHandler,
-    Node, NodeId, Point, Rect, Size, Tree, TreeUpdate,
+    Action, ActionData, ActionHandler, ActionRequest, ActivationHandler, DeactivationHandler, Node,
+    NodeId, Point, Rect, Size, Tree, TreeUpdate,
 };
-use fltk::{
-    button, enums::*, input, misc, prelude::*, text, utils, valuator, widget, *,
-};
+use fltk::{button, enums::*, input, misc, prelude::*, text, utils, valuator, widget, *};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -78,8 +76,9 @@ impl Adapter {
                                 if let Some(ActionData::Value(s)) = req.data.clone() {
                                     // TextEditor: operate on buffer
                                     if utils::is_ptr_of::<text::TextEditor>(w.as_widget_ptr()) {
-                                        let mut e =
-                                            text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
+                                        let mut e = text::TextEditor::from_widget_ptr(
+                                            w.as_widget_ptr() as _,
+                                        );
                                         if let Some(mut buf) = e.buffer() {
                                             if let Some((start, end)) = buf.selection_position() {
                                                 if start != end {
@@ -100,9 +99,12 @@ impl Adapter {
                                     } else if utils::is_ptr_of::<input::Input>(w.as_widget_ptr())
                                         || utils::is_ptr_of::<input::IntInput>(w.as_widget_ptr())
                                         || utils::is_ptr_of::<input::FloatInput>(w.as_widget_ptr())
-                                        || utils::is_ptr_of::<input::MultilineInput>(w.as_widget_ptr())
+                                        || utils::is_ptr_of::<input::MultilineInput>(
+                                            w.as_widget_ptr(),
+                                        )
                                     {
-                                        let mut i = input::Input::from_widget_ptr(w.as_widget_ptr() as _);
+                                        let mut i =
+                                            input::Input::from_widget_ptr(w.as_widget_ptr() as _);
                                         let start = i.position();
                                         let end = i.mark();
                                         if start != end {
@@ -121,7 +123,8 @@ impl Adapter {
                             Action::ScrollIntoView => {
                                 // Best effort: for TextEditor, ensure caret is visible
                                 if utils::is_ptr_of::<text::TextEditor>(w.as_widget_ptr()) {
-                                    let mut e = text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
+                                    let mut e =
+                                        text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
                                     e.show_insert_position();
                                 }
                             }
@@ -132,11 +135,13 @@ impl Adapter {
                             Action::SetTextSelection => {
                                 if let Some(ActionData::SetTextSelection(sel)) = req.data.clone() {
                                     // Only apply when selection nodes target this widget
-                                    if sel.anchor.node == req.target && sel.focus.node == req.target {
+                                    if sel.anchor.node == req.target && sel.focus.node == req.target
+                                    {
                                         // TextEditor path
                                         if utils::is_ptr_of::<text::TextEditor>(w.as_widget_ptr()) {
-                                            let mut e =
-                                                text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
+                                            let mut e = text::TextEditor::from_widget_ptr(
+                                                w.as_widget_ptr() as _,
+                                            );
                                             let mut buf = if let Some(b) = e.buffer() {
                                                 b
                                             } else {
@@ -154,17 +159,24 @@ impl Adapter {
                                                 buf.unselect();
                                                 e.set_insert_position(a);
                                             } else {
-                                                let (start, end) = if a <= f { (a, f) } else { (f, a) };
+                                                let (start, end) =
+                                                    if a <= f { (a, f) } else { (f, a) };
                                                 buf.select(start, end);
                                                 e.set_insert_position(end);
                                             }
                                         // Input family path
-                                        } else if utils::is_ptr_of::<input::Input>(w.as_widget_ptr())
-                                            || utils::is_ptr_of::<input::IntInput>(w.as_widget_ptr())
-                                            || utils::is_ptr_of::<input::FloatInput>(w.as_widget_ptr())
-                                            || utils::is_ptr_of::<input::MultilineInput>(w.as_widget_ptr())
-                                        {
-                                            let mut i = input::Input::from_widget_ptr(w.as_widget_ptr() as _);
+                                        } else if utils::is_ptr_of::<input::Input>(
+                                            w.as_widget_ptr(),
+                                        ) || utils::is_ptr_of::<input::IntInput>(
+                                            w.as_widget_ptr(),
+                                        ) || utils::is_ptr_of::<input::FloatInput>(
+                                            w.as_widget_ptr(),
+                                        ) || utils::is_ptr_of::<input::MultilineInput>(
+                                            w.as_widget_ptr(),
+                                        ) {
+                                            let mut i = input::Input::from_widget_ptr(
+                                                w.as_widget_ptr() as _,
+                                            );
                                             let len = i.value().len() as i32;
                                             let mut a = sel.anchor.character_index as i32;
                                             let mut f = sel.focus.character_index as i32;
@@ -181,7 +193,8 @@ impl Adapter {
                             Action::Expand => {
                                 // Expand menu-like controls
                                 if utils::is_ptr_of::<menu::MenuButton>(w.as_widget_ptr()) {
-                                    let mb = menu::MenuButton::from_widget_ptr(w.as_widget_ptr() as _);
+                                    let mb =
+                                        menu::MenuButton::from_widget_ptr(w.as_widget_ptr() as _);
                                     // Show popup; user may select an item, which will close automatically
                                     let _ = mb.popup();
                                 }
@@ -196,28 +209,49 @@ impl Adapter {
                                         ActionData::Value(s) => {
                                             // Choice (by label)
                                             if utils::is_ptr_of::<menu::Choice>(w.as_widget_ptr()) {
-                                                let mut c = menu::Choice::from_widget_ptr(w.as_widget_ptr() as _);
+                                                let mut c = menu::Choice::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 let idx = c.find_index(&s);
                                                 if idx >= 0 {
                                                     c.set_value(idx);
                                                 }
                                             }
                                             // Text-capable inputs
-                                            if utils::is_ptr_of::<input::IntInput>(w.as_widget_ptr()) {
-                                                let mut i = input::IntInput::from_widget_ptr(w.as_widget_ptr() as _);
+                                            if utils::is_ptr_of::<input::IntInput>(
+                                                w.as_widget_ptr(),
+                                            ) {
+                                                let mut i = input::IntInput::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 i.set_value(&s);
-                                            } else if utils::is_ptr_of::<input::FloatInput>(w.as_widget_ptr()) {
-                                                let mut i = input::FloatInput::from_widget_ptr(w.as_widget_ptr() as _);
+                                            } else if utils::is_ptr_of::<input::FloatInput>(
+                                                w.as_widget_ptr(),
+                                            ) {
+                                                let mut i = input::FloatInput::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 i.set_value(&s);
-                                            } else if utils::is_ptr_of::<input::MultilineInput>(w.as_widget_ptr()) {
-                                                let mut i =
-                                                    input::MultilineInput::from_widget_ptr(w.as_widget_ptr() as _);
+                                            } else if utils::is_ptr_of::<input::MultilineInput>(
+                                                w.as_widget_ptr(),
+                                            ) {
+                                                let mut i = input::MultilineInput::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 i.set_value(&s);
-                                            } else if utils::is_ptr_of::<input::Input>(w.as_widget_ptr()) {
-                                                let mut i = input::Input::from_widget_ptr(w.as_widget_ptr() as _);
+                                            } else if utils::is_ptr_of::<input::Input>(
+                                                w.as_widget_ptr(),
+                                            ) {
+                                                let mut i = input::Input::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 i.set_value(&s);
-                                            } else if utils::is_ptr_of::<text::TextEditor>(w.as_widget_ptr()) {
-                                                let mut e = text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
+                                            } else if utils::is_ptr_of::<text::TextEditor>(
+                                                w.as_widget_ptr(),
+                                            ) {
+                                                let mut e = text::TextEditor::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 if let Some(mut buf) = e.buffer() {
                                                     buf.set_text(&s);
                                                 } else {
@@ -226,7 +260,9 @@ impl Adapter {
                                                     e.set_buffer(Some(buf));
                                                 }
                                             // Toggle/Check buttons (boolean from string)
-                                            } else if utils::is_ptr_of::<button::CheckButton>(w.as_widget_ptr()) {
+                                            } else if utils::is_ptr_of::<button::CheckButton>(
+                                                w.as_widget_ptr(),
+                                            ) {
                                                 let mut b = button::CheckButton::from_widget_ptr(
                                                     w.as_widget_ptr() as _,
                                                 );
@@ -235,7 +271,9 @@ impl Adapter {
                                                     "1" | "true" | "on" | "yes"
                                                 );
                                                 b.set_value(on);
-                                            } else if utils::is_ptr_of::<button::ToggleButton>(w.as_widget_ptr()) {
+                                            } else if utils::is_ptr_of::<button::ToggleButton>(
+                                                w.as_widget_ptr(),
+                                            ) {
                                                 let mut b = button::ToggleButton::from_widget_ptr(
                                                     w.as_widget_ptr() as _,
                                                 );
@@ -248,8 +286,11 @@ impl Adapter {
                                             } else if let Ok(n) = s.parse::<f64>() {
                                                 macro_rules! set_val {
                                                     ($t:ty) => {{
-                                                        if utils::is_ptr_of::<$t>(w.as_widget_ptr()) {
-                                                            let mut v = <$t>::from_widget_ptr(w.as_widget_ptr() as _);
+                                                        if utils::is_ptr_of::<$t>(w.as_widget_ptr())
+                                                        {
+                                                            let mut v = <$t>::from_widget_ptr(
+                                                                w.as_widget_ptr() as _,
+                                                            );
                                                             v.set_value(n);
                                                             true
                                                         } else {
@@ -257,54 +298,78 @@ impl Adapter {
                                                         }
                                                     }};
                                                 }
-                                                let _handled =
-                                                    set_val!(valuator::Slider)
-                                                        || set_val!(valuator::NiceSlider)
-                                                        || set_val!(valuator::Dial)
-                                                        || set_val!(valuator::LineDial)
-                                                        || set_val!(valuator::Counter)
-                                                        || set_val!(valuator::Scrollbar)
-                                                        || set_val!(valuator::ValueInput)
-                                                        || set_val!(valuator::ValueOutput)
-                                                        || set_val!(valuator::ValueSlider)
-                                                        || set_val!(valuator::HorValueSlider)
-                                                        || set_val!(valuator::HorSlider)
-                                                        || set_val!(valuator::HorNiceSlider)
-                                                        || set_val!(valuator::FillSlider)
-                                                        || set_val!(valuator::HorFillSlider)
-                                                        || set_val!(misc::Spinner)
-                                                        || set_val!(misc::Progress);
+                                                let _handled = set_val!(valuator::Slider)
+                                                    || set_val!(valuator::NiceSlider)
+                                                    || set_val!(valuator::Dial)
+                                                    || set_val!(valuator::LineDial)
+                                                    || set_val!(valuator::Counter)
+                                                    || set_val!(valuator::Scrollbar)
+                                                    || set_val!(valuator::ValueInput)
+                                                    || set_val!(valuator::ValueOutput)
+                                                    || set_val!(valuator::ValueSlider)
+                                                    || set_val!(valuator::HorValueSlider)
+                                                    || set_val!(valuator::HorSlider)
+                                                    || set_val!(valuator::HorNiceSlider)
+                                                    || set_val!(valuator::FillSlider)
+                                                    || set_val!(valuator::HorFillSlider)
+                                                    || set_val!(misc::Spinner)
+                                                    || set_val!(misc::Progress);
                                                 // else: fallback noop
                                             }
                                         }
                                         ActionData::NumericValue(n) => {
                                             // Choice (by index)
                                             if utils::is_ptr_of::<menu::Choice>(w.as_widget_ptr()) {
-                                                let mut c = menu::Choice::from_widget_ptr(w.as_widget_ptr() as _);
+                                                let mut c = menu::Choice::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 let total = c.size();
                                                 let mut idx = n.round() as i32;
-                                                if idx < 0 { idx = 0; }
-                                                if idx >= total { idx = total - 1; }
+                                                if idx < 0 {
+                                                    idx = 0;
+                                                }
+                                                if idx >= total {
+                                                    idx = total - 1;
+                                                }
                                                 if total > 0 {
                                                     c.set_value(idx);
                                                 }
                                             }
                                             // Inputs (apply rounding for IntInput)
-                                            if utils::is_ptr_of::<input::IntInput>(w.as_widget_ptr()) {
-                                                let mut i = input::IntInput::from_widget_ptr(w.as_widget_ptr() as _);
+                                            if utils::is_ptr_of::<input::IntInput>(
+                                                w.as_widget_ptr(),
+                                            ) {
+                                                let mut i = input::IntInput::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 i.set_value(&format!("{}", n.round() as i64));
-                                            } else if utils::is_ptr_of::<input::FloatInput>(w.as_widget_ptr()) {
-                                                let mut i = input::FloatInput::from_widget_ptr(w.as_widget_ptr() as _);
+                                            } else if utils::is_ptr_of::<input::FloatInput>(
+                                                w.as_widget_ptr(),
+                                            ) {
+                                                let mut i = input::FloatInput::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 i.set_value(&format!("{}", n));
-                                            } else if utils::is_ptr_of::<input::MultilineInput>(w.as_widget_ptr()) {
-                                                let mut i =
-                                                    input::MultilineInput::from_widget_ptr(w.as_widget_ptr() as _);
+                                            } else if utils::is_ptr_of::<input::MultilineInput>(
+                                                w.as_widget_ptr(),
+                                            ) {
+                                                let mut i = input::MultilineInput::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 i.set_value(&format!("{}", n));
-                                            } else if utils::is_ptr_of::<input::Input>(w.as_widget_ptr()) {
-                                                let mut i = input::Input::from_widget_ptr(w.as_widget_ptr() as _);
+                                            } else if utils::is_ptr_of::<input::Input>(
+                                                w.as_widget_ptr(),
+                                            ) {
+                                                let mut i = input::Input::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 i.set_value(&format!("{}", n));
-                                            } else if utils::is_ptr_of::<text::TextEditor>(w.as_widget_ptr()) {
-                                                let mut e = text::TextEditor::from_widget_ptr(w.as_widget_ptr() as _);
+                                            } else if utils::is_ptr_of::<text::TextEditor>(
+                                                w.as_widget_ptr(),
+                                            ) {
+                                                let mut e = text::TextEditor::from_widget_ptr(
+                                                    w.as_widget_ptr() as _,
+                                                );
                                                 let s = format!("{}", n);
                                                 if let Some(mut buf) = e.buffer() {
                                                     buf.set_text(&s);
@@ -314,12 +379,16 @@ impl Adapter {
                                                     e.set_buffer(Some(buf));
                                                 }
                                             // Toggle/Check buttons (numeric → bool)
-                                            } else if utils::is_ptr_of::<button::CheckButton>(w.as_widget_ptr()) {
+                                            } else if utils::is_ptr_of::<button::CheckButton>(
+                                                w.as_widget_ptr(),
+                                            ) {
                                                 let mut b = button::CheckButton::from_widget_ptr(
                                                     w.as_widget_ptr() as _,
                                                 );
                                                 b.set_value(n != 0.0);
-                                            } else if utils::is_ptr_of::<button::ToggleButton>(w.as_widget_ptr()) {
+                                            } else if utils::is_ptr_of::<button::ToggleButton>(
+                                                w.as_widget_ptr(),
+                                            ) {
                                                 let mut b = button::ToggleButton::from_widget_ptr(
                                                     w.as_widget_ptr() as _,
                                                 );
@@ -328,8 +397,11 @@ impl Adapter {
                                             } else {
                                                 macro_rules! set_val {
                                                     ($t:ty) => {{
-                                                        if utils::is_ptr_of::<$t>(w.as_widget_ptr()) {
-                                                            let mut v = <$t>::from_widget_ptr(w.as_widget_ptr() as _);
+                                                        if utils::is_ptr_of::<$t>(w.as_widget_ptr())
+                                                        {
+                                                            let mut v = <$t>::from_widget_ptr(
+                                                                w.as_widget_ptr() as _,
+                                                            );
                                                             v.set_value(n);
                                                             true
                                                         } else {
@@ -337,23 +409,22 @@ impl Adapter {
                                                         }
                                                     }};
                                                 }
-                                                let _handled =
-                                                    set_val!(valuator::Slider)
-                                                        || set_val!(valuator::NiceSlider)
-                                                        || set_val!(valuator::Dial)
-                                                        || set_val!(valuator::LineDial)
-                                                        || set_val!(valuator::Counter)
-                                                        || set_val!(valuator::Scrollbar)
-                                                        || set_val!(valuator::ValueInput)
-                                                        || set_val!(valuator::ValueOutput)
-                                                        || set_val!(valuator::ValueSlider)
-                                                        || set_val!(valuator::HorValueSlider)
-                                                        || set_val!(valuator::HorSlider)
-                                                        || set_val!(valuator::HorNiceSlider)
-                                                        || set_val!(valuator::FillSlider)
-                                                        || set_val!(valuator::HorFillSlider)
-                                                        || set_val!(misc::Spinner)
-                                                        || set_val!(misc::Progress);
+                                                let _handled = set_val!(valuator::Slider)
+                                                    || set_val!(valuator::NiceSlider)
+                                                    || set_val!(valuator::Dial)
+                                                    || set_val!(valuator::LineDial)
+                                                    || set_val!(valuator::Counter)
+                                                    || set_val!(valuator::Scrollbar)
+                                                    || set_val!(valuator::ValueInput)
+                                                    || set_val!(valuator::ValueOutput)
+                                                    || set_val!(valuator::ValueSlider)
+                                                    || set_val!(valuator::HorValueSlider)
+                                                    || set_val!(valuator::HorSlider)
+                                                    || set_val!(valuator::HorNiceSlider)
+                                                    || set_val!(valuator::FillSlider)
+                                                    || set_val!(valuator::HorFillSlider)
+                                                    || set_val!(misc::Spinner)
+                                                    || set_val!(misc::Progress);
                                                 // else: fallback noop
                                             }
                                         }

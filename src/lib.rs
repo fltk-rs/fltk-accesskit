@@ -45,7 +45,10 @@ pub struct AccessibilityBuilder {
 
 impl AccessibilityBuilder {
     pub fn new(root: window::Window) -> Self {
-        Self { root, excludes: Excludes::default() }
+        Self {
+            root,
+            excludes: Excludes::default(),
+        }
     }
     pub fn exclude_widget<W: WidgetExt>(mut self, w: &W) -> Self {
         self.excludes.ptrs.insert(w.as_widget_ptr() as usize as u64);
@@ -58,9 +61,9 @@ impl AccessibilityBuilder {
         self
     }
     pub fn exclude_type<T: WidgetBase>(mut self) -> Self {
-        self.excludes
-            .preds
-            .push(Box::new(|w: &widget::Widget| fltk::utils::is_ptr_of::<T>(w.as_widget_ptr())));
+        self.excludes.preds.push(Box::new(|w: &widget::Widget| {
+            fltk::utils::is_ptr_of::<T>(w.as_widget_ptr())
+        }));
         self
     }
     pub fn exclude_if(mut self, pred: impl Fn(&widget::Widget) -> bool + 'static) -> Self {
@@ -127,24 +130,19 @@ impl AccessibleApp for app::App {
         let ctx = ac;
         let mut root = ctx.root.clone();
         root.handle({
-            move |_, ev| {
-                match ev {
-                    Event::KeyUp => {
-                        update_focused(&ctx);
-                        false
-                    }
-                    _ => false,
+            move |_, ev| match ev {
+                Event::KeyUp => {
+                    update_focused(&ctx);
+                    false
                 }
+                _ => false,
             }
         });
         self.run()
     }
 }
 
-fn collect_nodes(
-    root: &window::Window,
-    excludes: &Excludes,
-) -> Vec<(NodeId, accesskit::Node)> {
+fn collect_nodes(root: &window::Window, excludes: &Excludes) -> Vec<(NodeId, accesskit::Node)> {
     let mut out = Vec::new();
     // Traverse children of root
     let root_w = root.as_base_widget();
